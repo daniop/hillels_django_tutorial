@@ -15,8 +15,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         fake = Faker()
         users = []
-        for _ in range(options['total']):
+        total = options['total']
+        for _ in range(total):
             users.append(User(username=fake.user_name(),
                               email=fake.email(safe=False),
                               password=make_password(fake.password())))
         User.objects.bulk_create(users)
+        self.stdout.write(self.style.SUCCESS(f'Were created {total} users'))
