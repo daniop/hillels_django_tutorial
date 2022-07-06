@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 
 class Command(BaseCommand):
@@ -7,9 +7,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('user_id', nargs='+', type=int,
-                            choices=User.objects.filter(is_superuser=False).values_list('id', flat=True),
-                            help='User ID. ID`s of superusers are excluded')
+                            help='User ID.')
 
     def handle(self, *args, **kwargs):
         users_ids = kwargs['user_id']
-        User.objects.filter(id__in=users_ids).delete()
+        superusers = User.objects.filter(is_superuser=True).values_list('id', flat=True)
+        if set(superusers).intersection(set(users_ids)):
+            raise CommandError('It is not allowed to delete superuser')
+        deleted = User.objects.filter(id__in=users_ids).delete()
+        self.stdout.write(self.style.SUCCESS(f'Were deleted { deleted[0] } objects'))
